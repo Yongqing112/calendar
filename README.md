@@ -32,18 +32,19 @@ If you manually switch to a different parent and actually want the inheritance, 
 docker run --name my-postgres -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=calendar -p 5432:5432 -d postgres:15
 ```
 
-| 參數                            | 說明                                  |
-| ----------------------------- | ----------------------------------- |
-| `--name my-postgres`          | 容器名稱                                |
-| `-e POSTGRES_USER=admin`     | 建立的 PostgreSQL 使用者名稱                |
-| `-e POSTGRES_PASSWORD=admin` | 使用者密碼                               |
-| `-e POSTGRES_DB=calendar`         | 預設建立的資料庫                            |
-| `-p 5432:5432`                | 映射本機的 5432 port（PostgreSQL 預設 port） |
-| `-d`                          | 背景執行（detached mode）                 |
-| `postgres:15`                 | 使用 PostgreSQL 15 的官方映像              |
+| 參數                         | 說明                                         |
+| ---------------------------- | -------------------------------------------- |
+| `--name my-postgres`         | 容器名稱                                     |
+| `-e POSTGRES_USER=admin`     | 建立的 PostgreSQL 使用者名稱                 |
+| `-e POSTGRES_PASSWORD=admin` | 使用者密碼                                   |
+| `-e POSTGRES_DB=calendar`    | 預設建立的資料庫                             |
+| `-p 5432:5432`               | 映射本機的 5432 port（PostgreSQL 預設 port） |
+| `-d`                         | 背景執行（detached mode）                    |
+| `postgres:15`                | 使用 PostgreSQL 15 的官方映像                |
 
 啟動後測試連線，輸入以下指令：
 ```
+<!-- 目前使用Docker的Exec頁面輸入以下指令 -->
 psql -h localhost -U admin -d calendar
 ```
 
@@ -64,7 +65,7 @@ public class GlobalCorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // 所有路徑
-                .allowedOrigins("http://localhost:4200") // 允許 Angular 前端
+                .allowedOrigins("http://localhost:4200"); // 允許 Angular 前端，目前只有使用這個和addMapping
                 .allowedMethods("*") // GET, POST, OPTIONS, ...
                 .allowedHeaders("*")
                 .allowCredentials(true);
