@@ -46,6 +46,9 @@ docker run --name my-postgres -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin 
 ```
 <!-- 目前使用Docker的Exec頁面輸入以下指令 -->
 psql -h localhost -U admin -d calendar
+
+<!-- 取得特定表資料，Ctrl + C 可以清空指令-->
+SELECT * FROM event;
 ```
 
 ### CORS Error
