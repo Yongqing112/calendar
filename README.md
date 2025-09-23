@@ -48,6 +48,8 @@ docker run --name my-postgres -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin 
 psql -h localhost -U admin -d calendar
 
 <!-- 取得特定表資料，Ctrl + C 可以清空指令-->
+<!-- 在 psql 互動模式下，每個 SQL 指令必須以 分號 或 \g 結尾才會真正執行。-->
+<!-- 否則 psql 會一直等待，並把提示符號改成 calendar-#（表示還在等結束符號）。-->
 SELECT * FROM event;
 ```
 
