@@ -1,6 +1,6 @@
 package com.calendar.domain;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -16,10 +16,12 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String username;
+    private String createdBy;
     private String title;
-    private String note;
-    private LocalDate date;
+    private String description;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private String event_type;
 
     public Long getId() {
         return id;
@@ -27,11 +29,11 @@ public class Event {
     public void setId(Long id) {
         this.id = id;
     }
-    public String getUsername() {
-        return username;
+    public String getCreatedBy() {
+        return createdBy;
     }
-    public void setUsername(String username) {
-        this.username = username;
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
     public String getTitle() {
         return title;
@@ -39,16 +41,30 @@ public class Event {
     public void setTitle(String title) {
         this.title = title;
     }
-    public String getNote() {
-        return note;
+    public String getDescription() {
+        return description;
     }
-    public void setNote(String note) {
-        this.note = note;
+    public void setDescription(String description) {
+        this.description = description;
     }
-    public LocalDate getDate() {
-        return date;
+    public LocalDateTime getStartTime() {
+        return startTime;
     }
-    public void setDate(LocalDate date) {
-        this.date = date;
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+    
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
+    public String getEvent_type() {
+        return event_type;
+    }
+    public void setEvent_type(String event_type) {
+        this.event_type = event_type;
     }
 }
