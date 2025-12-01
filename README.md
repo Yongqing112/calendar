@@ -1,82 +1,224 @@
-# Getting Started
+# 📅 Calendar System - Event Management REST API
 
-### Reference Documentation
-For further reference, please consider the following sections:
+A modern Spring Boot REST API for managing calendar events with session-based authentication and PostgreSQL persistence. Built with Java 21 LTS.
 
-* [Official Apache Maven documentation](https://maven.apache.org/guides/index.html)
-* [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/3.5.3/maven-plugin)
-* [Create an OCI image](https://docs.spring.io/spring-boot/3.5.3/maven-plugin/build-image.html)
-* [Spring Web](https://docs.spring.io/spring-boot/3.5.3/reference/web/servlet.html)
-* [Spring Session for JDBC](https://docs.spring.io/spring-session/reference/)
-* [Spring Data JPA](https://docs.spring.io/spring-boot/3.5.3/reference/data/sql.html#data.sql.jpa-and-spring-data)
+## ✨ Features
 
-### Guides
-The following guides illustrate how to use some features concretely:
+### Core Functionality
+- **Create Events** - Add new calendar events with custom details
+- **Read Events** - Retrieve all events or fetch specific events by ID
+- **Update Events** - Modify event titles, descriptions, times, and event types
+- **Delete Events** - Remove events from the calendar
+- **Session Management** - JDBC-based session storage for user persistence
 
-* [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
-* [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
-* [Building REST services with Spring](https://spring.io/guides/tutorials/rest/)
-* [Accessing Data with JPA](https://spring.io/guides/gs/accessing-data-jpa/)
+### Technical Highlights
+- ✅ RESTful API design with proper HTTP status codes
+- ✅ CORS support for Angular frontend (`http://localhost:4200`)
+- ✅ PostgreSQL database with automatic schema generation
+- ✅ Jakarta EE / Hibernate JPA for ORM
+- ✅ Built with Java 21 LTS
 
-### Maven Parent overrides
+## 🛠️ Technology Stack
 
-Due to Maven's design, elements are inherited from the parent POM to the project POM.
-While most of the inheritance is fine, it also inherits unwanted elements like `<license>` and `<developers>` from the parent.
-To prevent this, the project POM contains empty overrides for these elements.
-If you manually switch to a different parent and actually want the inheritance, you need to remove those overrides.
+- **Java**: 21 LTS
+- **Framework**: Spring Boot 3.5.3
+- **Database**: PostgreSQL 15
+- **Build Tool**: Maven
+- **ORM**: Hibernate/Jakarta JPA
+- **Session Storage**: Spring Session with JDBC
 
-### Docker Postgres Start
+## 📋 Prerequisites
 
-一行啟動 PostgreSQL 的指令：
+- **Java 21 LTS** (already configured in the project)
+- **Docker** (for PostgreSQL container)
+- **Maven** (included via Maven Wrapper)
+- **Node.js** (for Angular frontend development)
+
+## 🚀 Quick Start
+
+### Step 1: Start PostgreSQL with Docker
+
+Run the command to launch PostgreSQL:
+
+```bash
+docker run --name my-postgres \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=admin \
+  -e POSTGRES_DB=calendar \
+  -p 5432:5432 \
+  -d postgres:15
 ```
-docker run --name my-postgres -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=calendar -p 5432:5432 -d postgres:15
-```
 
-| 參數                         | 說明                                         |
-| ---------------------------- | -------------------------------------------- |
-| `--name my-postgres`         | 容器名稱                                     |
-| `-e POSTGRES_USER=admin`     | 建立的 PostgreSQL 使用者名稱                 |
-| `-e POSTGRES_PASSWORD=admin` | 使用者密碼                                   |
-| `-e POSTGRES_DB=calendar`    | 預設建立的資料庫                             |
-| `-p 5432:5432`               | 映射本機的 5432 port（PostgreSQL 預設 port） |
-| `-d`                         | 背景執行（detached mode）                    |
-| `postgres:15`                | 使用 PostgreSQL 15 的官方映像                |
+| Parameter | Description |
+|-----------|-------------|
+| `--name my-postgres` | Container name |
+| `-e POSTGRES_USER=admin` | Database username |
+| `-e POSTGRES_PASSWORD=admin` | Database password |
+| `-e POSTGRES_DB=calendar` | Database name |
+| `-p 5432:5432` | Port mapping (PostgreSQL default: 5432) |
+| `-d` | Run in background (detached mode) |
+| `postgres:15` | PostgreSQL 15 official image |
 
-啟動後測試連線，輸入以下指令：
-```
-<!-- 目前使用Docker的Exec頁面輸入以下指令 -->
-psql -h localhost -U admin -d calendar
+### Step 2: Verify Database Connection
 
-<!-- 取得特定表資料，Ctrl + C 可以清空指令-->
-<!-- 在 psql 互動模式下，每個 SQL 指令必須以 分號 或 \g 結尾才會真正執行。-->
-<!-- 否則 psql 會一直等待，並把提示符號改成 calendar-#（表示還在等結束符號）。-->
+Connect to PostgreSQL to verify it's running:
+
+```bash
+# Access PostgreSQL via Docker
+docker exec -it my-postgres psql -U admin -d calendar
+
+# Check if tables exist
 SELECT * FROM event;
 ```
 
-### CORS Error
-必須讓你的後端（假設是 Spring Boot / Node.js / Express / Java / Python 等）回傳以下 Header：
-```
-Access-Control-Allow-Origin: http://localhost:4200
-```
-後端允許跨網域(http://localhost:4200)的要求
-```
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+### Step 3: Build the Project
 
-@Configuration
-public class GlobalCorsConfig implements WebMvcConfigurer {
+```bash
+# Build with Maven (skips tests if database is not needed)
+./mvnw clean package -DskipTests
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // 所有路徑
-                .allowedOrigins("http://localhost:4200"); // 允許 Angular 前端，目前只有使用這個和addMapping
-                .allowedMethods("*") // GET, POST, OPTIONS, ...
-                .allowedHeaders("*")
-                .allowCredentials(true);
-    }
-}
+# Or run with tests (requires database to be running)
+./mvnw clean package
 ```
 
-如果設定後發送要求回傳 `403`:
-- 瀏覽器在發送「正式請求」前，會先發送一個 預檢請求（OPTIONS 請求） 來詢問伺服器是否允許跨域。如果後端沒處理這個預檢請求，它就會回傳 403。
+### Step 4: Run the Spring Boot Application
+
+```bash
+./mvnw spring-boot:run
+```
+
+The API will be available at `http://localhost:8080`
+
+## 📡 API Endpoints
+
+For complete API documentation with detailed examples, request/response samples, and use cases, please see:
+
+📖 **[API Documentation](./API.md)**
+
+The API includes the following endpoints:
+
+- `GET /events` - Retrieve all events
+- `POST /events` - Create a new event
+- `GET /events/{id}` - Get a specific event
+- `PUT /events/{id}` - Update an event
+- `DELETE /events?id={id}` - Delete an event
+
+All endpoints support the Event object with fields: `id`, `createdBy`, `title`, `description`, `startTime`, `endTime`, and `event_type`.
+
+## 🔐 CORS Configuration
+
+The API is configured to accept requests from the Angular frontend running on `http://localhost:4200`.
+
+### CORS Policy
+- **Origin**: http://localhost:4200
+- **Methods**: GET, POST, PUT, DELETE, OPTIONS
+- **Credentials**: Supported (for session cookies)
+
+### Troubleshooting CORS Errors (403)
+
+If you encounter a 403 error when making requests:
+
+1. **Verify CORS is configured** - The backend must send `Access-Control-Allow-Origin` header
+2. **Preflight requests** - Browsers send OPTIONS requests before POST/PUT/DELETE
+3. **Current Configuration** - Already implemented in `com.calendar.confug.CorsConfig`
+
+The CORS configuration is automatically handled. If you need to modify allowed origins, update `CorsConfig.java`:
+
+```java
+corsRegistry.addMapping("/**")
+    .allowedOrigins("http://localhost:4200")
+    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+    .allowCredentials(true);
+```
+
+## 🗄️ Database Schema
+
+The application automatically generates the database schema through Hibernate.
+
+### Event Table
+```sql
+CREATE TABLE event (
+  id BIGSERIAL PRIMARY KEY,
+  created_by VARCHAR(255),
+  title VARCHAR(255),
+  description TEXT,
+  start_time TIMESTAMP,
+  end_time TIMESTAMP,
+  event_type VARCHAR(255)
+);
+```
+
+## 🔄 Project Structure
+
+```
+src/main/java/com/calendar/
+├── CalendarApplication.java          # Spring Boot entry point
+├── controller/
+│   ├── EventController.java          # REST API endpoints
+│   └── AuthController.java           # Authentication endpoints
+├── service/
+│   └── EventService.java             # Business logic
+├── domain/
+│   └── Event.java                    # JPA Entity
+├── repository/
+│   └── EventRepository.java          # JPA Repository
+└── confug/
+    └── CorsConfig.java               # CORS configuration
+```
+
+## 🔧 Configuration
+
+Main configuration file: `src/main/resources/application.properties`
+
+```properties
+# Database Connection
+spring.datasource.url=jdbc:postgresql://localhost:5432/calendar
+spring.datasource.username=admin
+spring.datasource.password=admin
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# Hibernate Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+# Session Management
+spring.session.jdbc.initialize-schema=always
+spring.sql.init.mode=always
+```
+
+## 📚 Reference Documentation
+
+- [Spring Boot Official Documentation](https://spring.io/projects/spring-boot)
+- [Spring Data JPA](https://spring.io/projects/spring-data-jpa)
+- [Spring Session](https://spring.io/projects/spring-session)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [Jakarta EE Specification](https://jakarta.ee/)
+
+## 📝 Notes
+
+- The project uses Java 21 LTS for modern language features
+- Automatic schema generation is enabled (`ddl-auto=update`)
+- The `createdBy` field is required for event creation (represents logged-in user)
+- Session data is persisted in PostgreSQL via Spring Session
+- All timestamps use `LocalDateTime` for local timezone handling
+
+## 🤝 Development
+
+### Running Tests
+```bash
+./mvnw test
+```
+
+### Building Docker Image
+```bash
+./mvnw spring-boot:build-image
+```
+
+### Clean Build
+```bash
+./mvnw clean install
+```
+
+---
+
+**Happy event scheduling!** 📅✨
