@@ -63,7 +63,7 @@ Content-Type: application/json
 ]
 ```
 
-**Example cURL:**
+**Example CURL:**
 ```bash
 curl -X GET http://localhost:8080/events
 ```
