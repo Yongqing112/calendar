@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RestController
 public class AuthController {
 
-    private static final List<String> users = Arrays.asList("爸爸", "媽媽", "哥哥", "妹妹");
+    private static final List<String> users = Arrays.asList("爸爸", "媽媽", "哥哥", "妹妹", "admin");
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
 		System.out.println("Login:" + payload);

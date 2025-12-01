@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.calendar.domain.Event;
 import com.calendar.repository.EventRepository;
+import com.calendar.service.EventService;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,10 +28,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RequestMapping("/events")
 public class EventController {
 
+    private final EventService eventService;
     private final EventRepository repository;
 
-    EventController(EventRepository repository) {
+    EventController(EventRepository repository, EventService eventService) {
         this.repository = repository;
+        this.eventService = eventService;
     }
 
     @GetMapping
@@ -51,7 +54,7 @@ public class EventController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Event> getEvent(@PathVariable Long id) {
-        Event event = repository.findById(id).orElseThrow(null);
+        Event event = repository.findById(id).orElseThrow(() -> new RuntimeException("Event not found"));
         
         return ResponseEntity.ok(event);
     }
@@ -59,13 +62,7 @@ public class EventController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Event> updateEvent(@PathVariable Long id, @RequestBody Event updateEvent) {
-        Event event = repository.findById(id).map(e -> {
-            e.setTitle(updateEvent.getTitle());
-            e.setDescription(updateEvent.getDescription());
-            e.setStartTime(updateEvent.getStartTime());
-            e.setEndTime(updateEvent.getEndTime());
-            return repository.save(e);
-        }).orElseThrow(null);
+        Event event = eventService.updateEvent(id, updateEvent);
         
         return ResponseEntity.ok(event);
     }
@@ -79,7 +76,7 @@ public class EventController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, String> response = new HashMap<>();
-            response.put("message", "刪除失敗");
+            response.put("message", "刪除失敗，請確認id是否正確");
             return ResponseEntity.badRequest().body(response);
         }
     }
