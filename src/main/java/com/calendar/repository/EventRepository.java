@@ -17,4 +17,11 @@ public interface EventRepository extends JpaRepository<Event, Long>{
     List<Event> findEventsInRange(@Param("createdBy") String createdBy,
                                   @Param("start") LocalDateTime start,
                                   @Param("end") LocalDateTime end);
+
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.startTime >= :startDate " +
+           "AND e.startTime < :endDate " +
+           "ORDER BY e.startTime ASC")
+    List<Event> findEventsByDateRange(@Param("startDate") LocalDateTime startDate,
+                                      @Param("endDate") LocalDateTime endDate);
 }

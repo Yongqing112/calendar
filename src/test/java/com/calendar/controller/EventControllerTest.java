@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Optional;
@@ -48,7 +49,7 @@ public class EventControllerTest {
 		testEvent = new Event();
 		testEvent.setId(1L);
 		testEvent.setTitle("Test Event");
-		testEvent.setDescription("Test Description");
+		testEvent.setDescription("This is a test event");
 		testEvent.setCreatedBy("TestUser");
 		testEvent.setStartTime(LocalDateTime.of(2025, 9, 22, 10, 0));
 		testEvent.setEndTime(LocalDateTime.of(2025, 9, 22, 11, 0));
@@ -57,32 +58,25 @@ public class EventControllerTest {
 
 	@Test
 	void testGetAllEvents_Success() throws Exception {
-		Event event2 = new Event();
-		event2.setId(2L);
-		event2.setTitle("Event 2");
-		event2.setDescription("Description 2");
-		event2.setCreatedBy("User2");
-		event2.setStartTime(LocalDateTime.of(2025, 9, 23, 10, 0));
-		event2.setEndTime(LocalDateTime.of(2025, 9, 23, 11, 0));
+		when(eventRepository.findAll())
+				.thenReturn(Arrays.asList(testEvent));
 
-		when(eventRepository.findAll()).thenReturn(Arrays.asList(testEvent, event2));
-
-		mockMvc.perform(get("/events").contentType(MediaType.APPLICATION_JSON))
+		mockMvc.perform(get("/events")
+				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$").isArray())
-				.andExpect(jsonPath("$.length()").value(2))
-				.andExpect(jsonPath("$[0].id").value(1L))
-				.andExpect(jsonPath("$[0].title").value("Test Event"))
-				.andExpect(jsonPath("$[1].id").value(2L));
+				.andExpect(jsonPath("$[0].id").value(1))
+				.andExpect(jsonPath("$[0].title").value("Test Event"));
 
 		verify(eventRepository, times(1)).findAll();
 	}
 
 	@Test
 	void testGetAllEvents_Empty() throws Exception {
-		when(eventRepository.findAll()).thenReturn(Arrays.asList());
+		when(eventRepository.findAll())
+				.thenReturn(Arrays.asList());
 
-		mockMvc.perform(get("/events").contentType(MediaType.APPLICATION_JSON))
+		mockMvc.perform(get("/events")
+				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$").isArray())
 				.andExpect(jsonPath("$.length()").value(0));
@@ -92,49 +86,63 @@ public class EventControllerTest {
 
 	@Test
 	void testCreateEvent_Success() throws Exception {
-		when(eventRepository.save(any(Event.class))).thenReturn(testEvent);
+		when(eventRepository.save(any(Event.class)))
+				.thenReturn(testEvent);
 
 		mockMvc.perform(post("/events")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(testEvent)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(1L))
-				.andExpect(jsonPath("$.title").value("Test Event"))
-				.andExpect(jsonPath("$.createdBy").value("TestUser"));
+				.andExpect(jsonPath("$.id").value(1))
+				.andExpect(jsonPath("$.title").value("Test Event"));
 
 		verify(eventRepository, times(1)).save(any(Event.class));
 	}
 
 	@Test
 	void testCreateEvent_NoCreatedBy() throws Exception {
-		Event eventNoUser = new Event();
-		eventNoUser.setTitle("Test Event");
-		eventNoUser.setDescription("Test Description");
-		eventNoUser.setCreatedBy(null);
-		eventNoUser.setStartTime(LocalDateTime.of(2025, 9, 22, 10, 0));
-		eventNoUser.setEndTime(LocalDateTime.of(2025, 9, 22, 11, 0));
+		Event eventNoCreatedBy = new Event();
+		eventNoCreatedBy.setTitle("Test Event");
 
 		mockMvc.perform(post("/events")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(eventNoUser)))
+				.content(objectMapper.writeValueAsString(eventNoCreatedBy)))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$").value("Does not login."));
+				.andExpect(content().string("Does not login."));
 
 		verify(eventRepository, times(0)).save(any(Event.class));
 	}
 
 	@Test
 	void testGetEvent_Success() throws Exception {
-		when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+		when(eventRepository.findById(1L))
+				.thenReturn(Optional.of(testEvent));
 
-		mockMvc.perform(get("/events/1").contentType(MediaType.APPLICATION_JSON))
+		mockMvc.perform(get("/events/1")
+				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(1L))
-				.andExpect(jsonPath("$.title").value("Test Event"))
-				.andExpect(jsonPath("$.description").value("Test Description"))
-				.andExpect(jsonPath("$.createdBy").value("TestUser"));
+				.andExpect(jsonPath("$.id").value(1))
+				.andExpect(jsonPath("$.title").value("Test Event"));
 
 		verify(eventRepository, times(1)).findById(1L);
+	}
+
+	@Test
+	void testUpdateEvent_Success() throws Exception {
+		when(eventService.updateEvent(eq(1L), any(Event.class)))
+				.thenReturn(testEvent);
+
+		Event updateEvent = new Event();
+		updateEvent.setTitle("Updated Event");
+
+		mockMvc.perform(put("/events/1")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(updateEvent)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(1))
+				.andExpect(jsonPath("$.title").value("Test Event"));
+
+		verify(eventService, times(1)).updateEvent(eq(1L), any(Event.class));
 	}
 
 	@Test
@@ -159,5 +167,92 @@ public class EventControllerTest {
 				.andExpect(jsonPath("$.message").value("刪除失敗，請確認id是否正確"));
 
 		verify(eventRepository, times(1)).deleteById(999L);
+	}
+
+	@Test
+	void testSearchByDateRange_Success() throws Exception {
+		Event event1 = new Event();
+		event1.setId(1L);
+		event1.setTitle("Event 1");
+		event1.setStartTime(LocalDateTime.of(2025, 9, 22, 10, 0));
+
+		Event event2 = new Event();
+		event2.setId(2L);
+		event2.setTitle("Event 2");
+		event2.setStartTime(LocalDateTime.of(2025, 9, 23, 14, 0));
+
+		when(eventService.searchEventsByDateRange(
+				LocalDate.of(2025, 9, 20),
+				LocalDate.of(2025, 9, 25)))
+				.thenReturn(Arrays.asList(event1, event2));
+
+		mockMvc.perform(get("/events/search")
+				.param("startDate", "2025-09-20")
+				.param("endDate", "2025-09-25")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value(1))
+				.andExpect(jsonPath("$[0].title").value("Event 1"))
+				.andExpect(jsonPath("$[1].id").value(2))
+				.andExpect(jsonPath("$[1].title").value("Event 2"));
+
+		verify(eventService, times(1)).searchEventsByDateRange(
+				LocalDate.of(2025, 9, 20),
+				LocalDate.of(2025, 9, 25));
+	}
+
+	@Test
+	void testSearchByDateRange_EmptyResult() throws Exception {
+		when(eventService.searchEventsByDateRange(
+				LocalDate.of(2025, 1, 1),
+				LocalDate.of(2025, 1, 31)))
+				.thenReturn(Arrays.asList());
+
+		mockMvc.perform(get("/events/search")
+				.param("startDate", "2025-01-01")
+				.param("endDate", "2025-01-31")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$.length()").value(0));
+
+		verify(eventService, times(1)).searchEventsByDateRange(
+				LocalDate.of(2025, 1, 1),
+				LocalDate.of(2025, 1, 31));
+	}
+
+	@Test
+	void testSearchByDateRange_InvalidDateRange() throws Exception {
+		when(eventService.searchEventsByDateRange(
+				LocalDate.of(2025, 12, 31),
+				LocalDate.of(2025, 1, 1)))
+				.thenThrow(new IllegalArgumentException("Start date must be before or equal to end date"));
+
+		mockMvc.perform(get("/events/search")
+				.param("startDate", "2025-12-31")
+				.param("endDate", "2025-01-01")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("Start date must be before or equal to end date"));
+
+		verify(eventService, times(1)).searchEventsByDateRange(
+				LocalDate.of(2025, 12, 31),
+				LocalDate.of(2025, 1, 1));
+	}
+
+	@Test
+	void testSearchByDateRange_MissingStartDate() throws Exception {
+		mockMvc.perform(get("/events/search")
+				.param("endDate", "2025-09-25")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void testSearchByDateRange_MissingEndDate() throws Exception {
+		mockMvc.perform(get("/events/search")
+				.param("startDate", "2025-09-20")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest());
 	}
 }

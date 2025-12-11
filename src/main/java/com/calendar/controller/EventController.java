@@ -80,4 +80,32 @@ public class EventController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchByDateRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        
+        try {
+            if (startDate == null || endDate == null) {
+                return ResponseEntity.badRequest()
+                    .body(new HashMap<String, String>() {{
+                        put("error", "startDate and endDate parameters are required");
+                    }});
+            }
+            
+            List<Event> events = eventService.searchEventsByDateRange(startDate, endDate);
+            return ResponseEntity.ok(events);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(new HashMap<String, String>() {{
+                    put("error", e.getMessage());
+                }});
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new HashMap<String, String>() {{
+                    put("error", "An error occurred while searching events");
+                }});
+        }
+    }
 }

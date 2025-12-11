@@ -3,7 +3,10 @@ package com.calendar.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -127,5 +130,106 @@ public class EventServiceTest {
 		assertThat(result.getEndTime()).isEqualTo(updateEvent.getEndTime());
 
 		verify(eventRepository, times(1)).save(any(Event.class));
+	}
+
+	@Test
+	void testSearchEventsByDateRange_Success() {
+		LocalDate startDate = LocalDate.of(2025, 9, 20);
+		LocalDate endDate = LocalDate.of(2025, 9, 25);
+		LocalDateTime startDateTime = startDate.atStartOfDay();
+		LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+
+		Event event1 = new Event();
+		event1.setId(1L);
+		event1.setTitle("Event 1");
+		event1.setStartTime(LocalDateTime.of(2025, 9, 22, 10, 0));
+
+		Event event2 = new Event();
+		event2.setId(2L);
+		event2.setTitle("Event 2");
+		event2.setStartTime(LocalDateTime.of(2025, 9, 23, 14, 0));
+
+		List<Event> events = new ArrayList<>();
+		events.add(event1);
+		events.add(event2);
+
+		when(eventRepository.findEventsByDateRange(startDateTime, endDateTime))
+				.thenReturn(events);
+
+		List<Event> result = eventService.searchEventsByDateRange(startDate, endDate);
+
+		assertThat(result).isNotNull();
+		assertThat(result).hasSize(2);
+		assertThat(result.get(0).getId()).isEqualTo(1L);
+		assertThat(result.get(1).getId()).isEqualTo(2L);
+
+		verify(eventRepository, times(1)).findEventsByDateRange(startDateTime, endDateTime);
+	}
+
+	@Test
+	void testSearchEventsByDateRange_EmptyResult() {
+		LocalDate startDate = LocalDate.of(2025, 1, 1);
+		LocalDate endDate = LocalDate.of(2025, 1, 31);
+		LocalDateTime startDateTime = startDate.atStartOfDay();
+		LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+
+		when(eventRepository.findEventsByDateRange(startDateTime, endDateTime))
+				.thenReturn(new ArrayList<>());
+
+		List<Event> result = eventService.searchEventsByDateRange(startDate, endDate);
+
+		assertThat(result).isNotNull();
+		assertThat(result).isEmpty();
+
+		verify(eventRepository, times(1)).findEventsByDateRange(startDateTime, endDateTime);
+	}
+
+	@Test
+	void testSearchEventsByDateRange_StartDateNull() {
+		assertThatThrownBy(() -> eventService.searchEventsByDateRange(null, LocalDate.of(2025, 12, 31)))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Start date and end date cannot be null");
+	}
+
+	@Test
+	void testSearchEventsByDateRange_EndDateNull() {
+		assertThatThrownBy(() -> eventService.searchEventsByDateRange(LocalDate.of(2025, 1, 1), null))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Start date and end date cannot be null");
+	}
+
+	@Test
+	void testSearchEventsByDateRange_StartDateAfterEndDate() {
+		LocalDate startDate = LocalDate.of(2025, 12, 31);
+		LocalDate endDate = LocalDate.of(2025, 1, 1);
+
+		assertThatThrownBy(() -> eventService.searchEventsByDateRange(startDate, endDate))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Start date must be before or equal to end date");
+	}
+
+	@Test
+	void testSearchEventsByDateRange_SameDateRange() {
+		LocalDate date = LocalDate.of(2025, 9, 22);
+		LocalDateTime startDateTime = date.atStartOfDay();
+		LocalDateTime endDateTime = date.atTime(23, 59, 59);
+
+		Event event = new Event();
+		event.setId(1L);
+		event.setTitle("Event on specific day");
+		event.setStartTime(LocalDateTime.of(2025, 9, 22, 10, 0));
+
+		List<Event> events = new ArrayList<>();
+		events.add(event);
+
+		when(eventRepository.findEventsByDateRange(startDateTime, endDateTime))
+				.thenReturn(events);
+
+		List<Event> result = eventService.searchEventsByDateRange(date, date);
+
+		assertThat(result).hasSize(1);
+		assertThat(result.get(0).getTitle()).isEqualTo("Event on specific day");
+
+		verify(eventRepository, times(1)).findEventsByDateRange(startDateTime, endDateTime);
 	}
 }
