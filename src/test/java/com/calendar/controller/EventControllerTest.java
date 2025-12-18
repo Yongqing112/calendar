@@ -5,7 +5,12 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.time.LocalDate;
+import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Optional;
@@ -254,5 +259,147 @@ public class EventControllerTest {
 				.param("startDate", "2025-09-20")
 				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void testSearchByDateRange_MissingBothDates() throws Exception {
+		mockMvc.perform(get("/events/search")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void testSearchByDateRange_InvalidDateFormat() throws Exception {
+		mockMvc.perform(get("/events/search")
+				.param("startDate", "2025/09/20")
+				.param("endDate", "2025/09/25")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void testSearchByDateRange_SameDateRange() throws Exception {
+		Event event1 = new Event();
+		event1.setId(1L);
+		event1.setTitle("Event 1");
+		event1.setStartTime(LocalDateTime.of(2025, 9, 22, 10, 0));
+
+		when(eventService.searchEventsByDateRange(
+				LocalDate.of(2025, 9, 22),
+				LocalDate.of(2025, 9, 22)))
+				.thenReturn(Arrays.asList(event1));
+
+		mockMvc.perform(get("/events/search")
+				.param("startDate", "2025-09-22")
+				.param("endDate", "2025-09-22")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value(1))
+				.andExpect(jsonPath("$[0].title").value("Event 1"));
+
+		verify(eventService, times(1)).searchEventsByDateRange(
+				LocalDate.of(2025, 9, 22),
+				LocalDate.of(2025, 9, 22));
+	}
+
+	@Test
+	void testSearchByDateRange_SingleEvent() throws Exception {
+		Event singleEvent = new Event();
+		singleEvent.setId(1L);
+		singleEvent.setTitle("Single Event");
+		singleEvent.setStartTime(LocalDateTime.of(2025, 9, 22, 10, 0));
+
+		when(eventService.searchEventsByDateRange(
+				LocalDate.of(2025, 9, 20),
+				LocalDate.of(2025, 9, 25)))
+				.thenReturn(Arrays.asList(singleEvent));
+
+		mockMvc.perform(get("/events/search")
+				.param("startDate", "2025-09-20")
+				.param("endDate", "2025-09-25")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].id").value(1))
+				.andExpect(jsonPath("$[0].title").value("Single Event"));
+
+		verify(eventService, times(1)).searchEventsByDateRange(
+				LocalDate.of(2025, 9, 20),
+				LocalDate.of(2025, 9, 25));
+	}
+
+	@Test
+	void testSearchByDateRange_ServiceException() throws Exception {
+		when(eventService.searchEventsByDateRange(
+				LocalDate.of(2025, 9, 20),
+				LocalDate.of(2025, 9, 25)))
+				.thenThrow(new RuntimeException("Database connection error"));
+
+		mockMvc.perform(get("/events/search")
+				.param("startDate", "2025-09-20")
+				.param("endDate", "2025-09-25")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isInternalServerError())
+				.andExpect(jsonPath("$.error").value("An error occurred while searching events"));
+
+		verify(eventService, times(1)).searchEventsByDateRange(
+				LocalDate.of(2025, 9, 20),
+				LocalDate.of(2025, 9, 25));
+	}
+
+	@Test
+	void testSearchByDateRange_NullParametersInService() throws Exception {
+		when(eventService.searchEventsByDateRange(null, null))
+				.thenThrow(new IllegalArgumentException("Start date and end date cannot be null"));
+
+		mockMvc.perform(get("/events/search")
+				.param("startDate", "")
+				.param("endDate", "")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void testSearchByDateRange_LargeDataSet() throws Exception {
+		Event[] events = new Event[100];
+		for (int i = 0; i < 100; i++) {
+			Event event = new Event();
+			event.setId((long) (i + 1));
+			event.setTitle("Event " + (i + 1));
+			int dayOffset = i / 24;
+			int hour = (i % 24);
+			event.setStartTime(LocalDateTime.of(2025, 9, 20 + dayOffset, hour, 0));
+			events[i] = event;
+		}
+
+		when(eventService.searchEventsByDateRange(
+				LocalDate.of(2025, 9, 20),
+				LocalDate.of(2025, 10, 18)))
+				.thenReturn(Arrays.asList(events));
+
+		mockMvc.perform(get("/events/search")
+				.param("startDate", "2025-09-20")
+				.param("endDate", "2025-10-18")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$.length()").value(100))
+				.andExpect(jsonPath("$[0].id").value(1))
+				.andExpect(jsonPath("$[99].id").value(100));
+
+		verify(eventService, times(1)).searchEventsByDateRange(
+				LocalDate.of(2025, 9, 20),
+				LocalDate.of(2025, 10, 18));
+	}
+
+	@Test
+	void testSearchByDateRange_ControllerNullParametersDirect() {
+		EventController controller = new EventController(eventRepository, eventService);
+		ResponseEntity<?> resp = controller.searchByDateRange(null, null);
+		assertEquals(HttpStatus.BAD_REQUEST, resp.getStatusCode());
+		@SuppressWarnings("unchecked")
+		Map<String, String> body = (Map<String, String>) resp.getBody();
+		assertEquals("startDate and endDate parameters are required", body.get("error"));
 	}
 }
