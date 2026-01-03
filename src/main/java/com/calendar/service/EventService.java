@@ -49,4 +49,24 @@ public class EventService {
 		
 		return eventRepository.findEventsByDateRange(startDateTime, endDateTime);
 	}
+
+	public List<Event> findAll() {
+		return eventRepository.findAll();
+	}
+
+	public Event save(Event event) {
+		return eventRepository.save(event);
+	}
+
+	public Event findById(Long id){
+		return eventRepository.findById(id).orElseThrow(() -> new RuntimeException("Event not found"));
+	}
+
+	public void deleteById(Long id){
+		try {
+			eventRepository.deleteById(id);
+		} catch (Exception e) {
+			throw new RuntimeException("Error deleting event", e);
+		}
+	}
 }

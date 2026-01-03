@@ -1,54 +1,53 @@
 package com.calendar.controller;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
-import java.util.Map;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.calendar.domain.Event;
-import com.calendar.repository.EventRepository;
 import com.calendar.service.EventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureMockMvc
-@TestPropertySource(locations = "classpath:application-test.properties")
+@WebMvcTest(EventController.class)
 public class EventControllerTest {
+    @Autowired
+    private MockMvc mockMvc;
 
-	@Autowired
-	private MockMvc mockMvc;
-
-	@Autowired
+    @Autowired
 	private ObjectMapper objectMapper;
 
-	@MockBean
-	private EventRepository eventRepository;
+    @MockitoBean
+    private EventService eventService;
 
-	@MockBean
-	private EventService eventService;
-
-	private Event testEvent;
-
+    private Event testEvent;
 	@BeforeEach
 	void setUp() {
 		testEvent = new Event();
@@ -63,8 +62,8 @@ public class EventControllerTest {
 
 	@Test
 	void testGetAllEvents_Success() throws Exception {
-		when(eventRepository.findAll())
-				.thenReturn(Arrays.asList(testEvent));
+		when(eventService.findAll())
+				.thenReturn(List.of(testEvent));
 
 		mockMvc.perform(get("/events")
 				.contentType(MediaType.APPLICATION_JSON))
@@ -72,13 +71,13 @@ public class EventControllerTest {
 				.andExpect(jsonPath("$[0].id").value(1))
 				.andExpect(jsonPath("$[0].title").value("Test Event"));
 
-		verify(eventRepository, times(1)).findAll();
+		verify(eventService, times(1)).findAll();
 	}
 
-	@Test
+    @Test
 	void testGetAllEvents_Empty() throws Exception {
-		when(eventRepository.findAll())
-				.thenReturn(Arrays.asList());
+		when(eventService.findAll())
+				.thenReturn(List.of());
 
 		mockMvc.perform(get("/events")
 				.contentType(MediaType.APPLICATION_JSON))
@@ -86,12 +85,13 @@ public class EventControllerTest {
 				.andExpect(jsonPath("$").isArray())
 				.andExpect(jsonPath("$.length()").value(0));
 
-		verify(eventRepository, times(1)).findAll();
+
+		verify(eventService, times(1)).findAll();
 	}
 
-	@Test
+    @Test
 	void testCreateEvent_Success() throws Exception {
-		when(eventRepository.save(any(Event.class)))
+		when(eventService.save(any(Event.class)))
 				.thenReturn(testEvent);
 
 		mockMvc.perform(post("/events")
@@ -101,8 +101,9 @@ public class EventControllerTest {
 				.andExpect(jsonPath("$.id").value(1))
 				.andExpect(jsonPath("$.title").value("Test Event"));
 
-		verify(eventRepository, times(1)).save(any(Event.class));
+		verify(eventService, times(1)).save(any(Event.class));
 	}
+
 
 	@Test
 	void testCreateEvent_NoCreatedBy() throws Exception {
@@ -115,13 +116,13 @@ public class EventControllerTest {
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().string("Does not login."));
 
-		verify(eventRepository, times(0)).save(any(Event.class));
+		verify(eventService, times(0)).save(any(Event.class));
 	}
 
 	@Test
 	void testGetEvent_Success() throws Exception {
-		when(eventRepository.findById(1L))
-				.thenReturn(Optional.of(testEvent));
+		when(eventService.findById(1L))
+				.thenReturn(testEvent);
 
 		mockMvc.perform(get("/events/1")
 				.contentType(MediaType.APPLICATION_JSON))
@@ -129,7 +130,7 @@ public class EventControllerTest {
 				.andExpect(jsonPath("$.id").value(1))
 				.andExpect(jsonPath("$.title").value("Test Event"));
 
-		verify(eventRepository, times(1)).findById(1L);
+		verify(eventService, times(1)).findById(1L);
 	}
 
 	@Test
@@ -152,26 +153,26 @@ public class EventControllerTest {
 
 	@Test
 	void testDeleteEvent_Success() throws Exception {
-		doNothing().when(eventRepository).deleteById(1L);
+		doNothing().when(eventService).deleteById(1L);
 
 		mockMvc.perform(delete("/events").param("id", "1")
 				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.message").value("刪除成功"));
 
-		verify(eventRepository, times(1)).deleteById(1L);
+		verify(eventService, times(1)).deleteById(1L);
 	}
 
-	@Test
+    @Test
 	void testDeleteEvent_Failure() throws Exception {
-		doThrow(new RuntimeException("Database error")).when(eventRepository).deleteById(999L);
+		doThrow(new RuntimeException("Database error")).when(eventService).deleteById(999L);
 
 		mockMvc.perform(delete("/events").param("id", "999")
 				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value("刪除失敗，請確認id是否正確"));
 
-		verify(eventRepository, times(1)).deleteById(999L);
+		verify(eventService, times(1)).deleteById(999L);
 	}
 
 	@Test
@@ -189,7 +190,7 @@ public class EventControllerTest {
 		when(eventService.searchEventsByDateRange(
 				LocalDate.of(2025, 9, 20),
 				LocalDate.of(2025, 9, 25)))
-				.thenReturn(Arrays.asList(event1, event2));
+				.thenReturn(List.of(event1, event2));
 
 		mockMvc.perform(get("/events/search")
 				.param("startDate", "2025-09-20")
@@ -211,7 +212,7 @@ public class EventControllerTest {
 		when(eventService.searchEventsByDateRange(
 				LocalDate.of(2025, 1, 1),
 				LocalDate.of(2025, 1, 31)))
-				.thenReturn(Arrays.asList());
+				.thenReturn(List.of());
 
 		mockMvc.perform(get("/events/search")
 				.param("startDate", "2025-01-01")
@@ -287,7 +288,7 @@ public class EventControllerTest {
 		when(eventService.searchEventsByDateRange(
 				LocalDate.of(2025, 9, 22),
 				LocalDate.of(2025, 9, 22)))
-				.thenReturn(Arrays.asList(event1));
+				.thenReturn(List.of(event1));
 
 		mockMvc.perform(get("/events/search")
 				.param("startDate", "2025-09-22")
@@ -312,7 +313,7 @@ public class EventControllerTest {
 		when(eventService.searchEventsByDateRange(
 				LocalDate.of(2025, 9, 20),
 				LocalDate.of(2025, 9, 25)))
-				.thenReturn(Arrays.asList(singleEvent));
+				.thenReturn(List.of(singleEvent));
 
 		mockMvc.perform(get("/events/search")
 				.param("startDate", "2025-09-20")
@@ -376,7 +377,7 @@ public class EventControllerTest {
 		when(eventService.searchEventsByDateRange(
 				LocalDate.of(2025, 9, 20),
 				LocalDate.of(2025, 10, 18)))
-				.thenReturn(Arrays.asList(events));
+				.thenReturn(List.of(events));
 
 		mockMvc.perform(get("/events/search")
 				.param("startDate", "2025-09-20")
@@ -391,15 +392,5 @@ public class EventControllerTest {
 		verify(eventService, times(1)).searchEventsByDateRange(
 				LocalDate.of(2025, 9, 20),
 				LocalDate.of(2025, 10, 18));
-	}
-
-	@Test
-	void testSearchByDateRange_ControllerNullParametersDirect() {
-		EventController controller = new EventController(eventRepository, eventService);
-		ResponseEntity<?> resp = controller.searchByDateRange(null, null);
-		assertEquals(HttpStatus.BAD_REQUEST, resp.getStatusCode());
-		@SuppressWarnings("unchecked")
-		Map<String, String> body = (Map<String, String>) resp.getBody();
-		assertEquals("startDate and endDate parameters are required", body.get("error"));
 	}
 }

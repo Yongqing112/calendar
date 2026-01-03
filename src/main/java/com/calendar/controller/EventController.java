@@ -29,23 +29,21 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class EventController {
 
     private final EventService eventService;
-    private final EventRepository repository;
 
-    EventController(EventRepository repository, EventService eventService) {
-        this.repository = repository;
+    EventController(EventService eventService) {
         this.eventService = eventService;
     }
 
     @GetMapping
     public ResponseEntity<List<Event>> getAllEvents() {
-        List<Event> events = repository.findAll();
+        List<Event> events = eventService.findAll();
         return ResponseEntity.ok(events);
     }
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Event event) {
         if (event.getCreatedBy() != null) {
-            Event newEvent = repository.save(event);
+            Event newEvent = eventService.save(event);
             return ResponseEntity.ok(newEvent);
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Does not login.");
@@ -54,7 +52,7 @@ public class EventController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Event> getEvent(@PathVariable Long id) {
-        Event event = repository.findById(id).orElseThrow(() -> new RuntimeException("Event not found"));
+        Event event = eventService.findById(id);
         
         return ResponseEntity.ok(event);
     }
@@ -70,7 +68,7 @@ public class EventController {
     @DeleteMapping
     public ResponseEntity<Map<String, String>> deleteEvent(@RequestParam Long id) {
         try {
-            repository.deleteById(id);
+            eventService.deleteById(id);
             Map<String, String> response = new HashMap<>();
             response.put("message", "刪除成功");
             return ResponseEntity.ok(response);
