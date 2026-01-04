@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.calendar.domain.Event;
-import com.calendar.repository.EventRepository;
 import com.calendar.service.EventService;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -85,13 +84,6 @@ public class EventController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         
         try {
-            if (startDate == null || endDate == null) {
-                return ResponseEntity.badRequest()
-                    .body(new HashMap<String, String>() {{
-                        put("error", "startDate and endDate parameters are required");
-                    }});
-            }
-            
             List<Event> events = eventService.searchEventsByDateRange(startDate, endDate);
             return ResponseEntity.ok(events);
         } catch (IllegalArgumentException e) {
