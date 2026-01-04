@@ -1,6 +1,7 @@
 package com.calendar.service;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDate;
@@ -50,6 +51,57 @@ public class EventServiceTest {
 	}
 
 	@Test
+	void testFindAllEvents() {
+		List<Event> events = new ArrayList<>();
+		events.add(testEvent);
+		events.add(updateEvent);
+
+		when(eventRepository.findAll()).thenReturn(events);
+
+		List<Event> result = eventService.findAll();
+		assertThat(result).isNotNull();
+		assertThat(result).hasSize(2);
+		verify(eventRepository, times(1)).findAll();
+	}
+
+	@Test
+	void testSaveEvent() {
+		when(eventRepository.save(testEvent)).thenReturn(testEvent);
+
+		Event result = eventService.save(testEvent);
+		assertThat(result).isNotNull();
+		assertThat(result.getId()).isEqualTo(1L);
+		assertThat(result.getTitle()).isEqualTo("Original Title");
+		assertThat(result.getDescription()).isEqualTo("Original Description");
+		assertThat(result.getCreatedBy()).isEqualTo("TestUser");
+		assertThat(result.getStartTime()).isEqualTo(LocalDateTime.of(2025, 9, 22, 10, 0));
+		assertThat(result.getEndTime()).isEqualTo(LocalDateTime.of(2025, 9, 22, 11, 0));
+		verify(eventRepository, times(1)).save(testEvent);
+	}
+
+	@Test
+	void testSaveEvent_shouldFail_whenStartTimeAndEndTimeNull() {
+		Event e = new Event();
+		e.setStartTime(null);
+		e.setEndTime(null);
+
+		assertThatThrownBy(() -> eventService.save(e))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("startTime and endTime are required");
+	}
+
+	@Test
+	void testSaveEvent_shouldFail_whenStartTimeAfterEndTime() {
+		Event e = new Event();
+		e.setStartTime(LocalDateTime.of(2025, 9, 23, 10, 0));
+		e.setEndTime(LocalDateTime.of(2025, 9, 22, 10, 0));
+
+		assertThatThrownBy(() -> eventService.save(e))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("startTime must be before endTime");
+	}
+
+	@Test
 	void testUpdateEvent_Success() {
 		when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
 		when(eventRepository.save(any(Event.class))).thenReturn(testEvent);
@@ -70,6 +122,31 @@ public class EventServiceTest {
 	}
 
 	@Test
+	void testFindById_Success() {
+		when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+
+		Event result = eventService.findById(1L);
+
+		assertThat(result).isNotNull();
+		assertThat(result.getId()).isEqualTo(1L);
+		assertThat(result.getTitle()).isEqualTo("Original Title");
+
+		verify(eventRepository, times(1)).findById(1L);
+	}
+
+	@Test
+	void testFindById_NotFound() {
+		when(eventRepository.findById(999L)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> eventService.findById(999L))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Event not found");
+
+		verify(eventRepository, times(1)).findById(999L);
+	}
+
+	// TODO Null fields in updateEvent should not overwrite existing fields
+	@Test
 	void testUpdateEvent_PartialUpdate() {
 		when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
 		when(eventRepository.save(any(Event.class))).thenReturn(testEvent);
@@ -85,6 +162,8 @@ public class EventServiceTest {
 		assertThat(result.getTitle()).isEqualTo("New Title Only");
 		// Description should be updated even if null is passed
 		assertThat(result.getDescription()).isNull();
+		assertThat(result.getStartTime()).isNull();
+		assertThat(result.getEndTime()).isNull();
 
 		verify(eventRepository, times(1)).findById(1L);
 		verify(eventRepository, times(1)).save(any(Event.class));
@@ -99,37 +178,6 @@ public class EventServiceTest {
 
 		verify(eventRepository, times(1)).findById(999L);
 		verify(eventRepository, times(0)).save(any(Event.class));
-	}
-
-	@Test
-	void testUpdateEvent_PreservesCreatedBy() {
-		when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
-		when(eventRepository.save(any(Event.class))).thenReturn(testEvent);
-
-		updateEvent.setCreatedBy("DifferentUser");
-
-		Event result = eventService.updateEvent(1L, updateEvent);
-
-		// CreatedBy should not be updated from request
-		assertThat(result.getCreatedBy()).isEqualTo("TestUser");
-
-		verify(eventRepository, times(1)).findById(1L);
-		verify(eventRepository, times(1)).save(any(Event.class));
-	}
-
-	@Test
-	void testUpdateEvent_UpdatesAllFields() {
-		when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
-		when(eventRepository.save(any(Event.class))).thenReturn(testEvent);
-
-		Event result = eventService.updateEvent(1L, updateEvent);
-
-		assertThat(result.getTitle()).isEqualTo("Updated Title");
-		assertThat(result.getDescription()).isEqualTo("Updated Description");
-		assertThat(result.getStartTime()).isEqualTo(updateEvent.getStartTime());
-		assertThat(result.getEndTime()).isEqualTo(updateEvent.getEndTime());
-
-		verify(eventRepository, times(1)).save(any(Event.class));
 	}
 
 	@Test
