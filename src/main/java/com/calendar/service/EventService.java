@@ -19,6 +19,18 @@ public class EventService {
 		this.eventRepository = eventRepository;
 	}
 
+	public List<Event> findAll() {
+		return eventRepository.findAll();
+	}
+
+	public Event save(Event event) {
+		return eventRepository.save(event);
+	}
+
+	public Event findById(Long id){
+		return eventRepository.findById(id).orElseThrow(() -> new RuntimeException("Event not found"));
+	}
+
 	@Transactional
 	public Event updateEvent(Long id, Event updateEvent){
 		Event event = eventRepository.findById(id).get();
@@ -27,6 +39,14 @@ public class EventService {
 		event.setStartTime(updateEvent.getStartTime());
 		event.setEndTime(updateEvent.getEndTime());
 		return eventRepository.save(event);
+	}
+
+	public void deleteById(Long id){
+		try {
+			eventRepository.deleteById(id);
+		} catch (Exception e) {
+			throw new RuntimeException("Error deleting event", e);
+		}
 	}
 
 	/**
@@ -48,25 +68,5 @@ public class EventService {
 		LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
 		
 		return eventRepository.findEventsByDateRange(startDateTime, endDateTime);
-	}
-
-	public List<Event> findAll() {
-		return eventRepository.findAll();
-	}
-
-	public Event save(Event event) {
-		return eventRepository.save(event);
-	}
-
-	public Event findById(Long id){
-		return eventRepository.findById(id).orElseThrow(() -> new RuntimeException("Event not found"));
-	}
-
-	public void deleteById(Long id){
-		try {
-			eventRepository.deleteById(id);
-		} catch (Exception e) {
-			throw new RuntimeException("Error deleting event", e);
-		}
 	}
 }
