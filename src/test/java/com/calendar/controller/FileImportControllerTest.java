@@ -16,7 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.calendar.confug.spring_batch.CalendarImportGateway;
+import com.calendar.config.spring_batch.CalendarImportGateway;
 
 @WebMvcTest(FileImportController.class)
 public class FileImportControllerTest {

@@ -1,4 +1,4 @@
-package com.calendar.confug.spring_batch;
+package com.calendar.config.spring_batch;
 
 import org.springframework.batch.item.file.mapping.FieldSetMapper;
 import org.springframework.batch.item.file.transform.FieldSet;

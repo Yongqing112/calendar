@@ -1,4 +1,4 @@
-package com.calendar.confug.spring_batch;
+package com.calendar.config.spring_batch;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
