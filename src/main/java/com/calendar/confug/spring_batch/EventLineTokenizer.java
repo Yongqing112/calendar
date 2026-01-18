@@ -6,7 +6,6 @@ public class EventLineTokenizer extends DelimitedLineTokenizer {
     public EventLineTokenizer() {
         super();
         setNames(new String[] {
-                "id",
                 "createdBy",
                 "title",
                 "description",

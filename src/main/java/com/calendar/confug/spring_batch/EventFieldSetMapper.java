@@ -10,7 +10,6 @@ public class EventFieldSetMapper implements FieldSetMapper<Event> {
     @Override
     public Event mapFieldSet(FieldSet fieldSet){
         Event event = new Event();
-        event.setId(fieldSet.readLong("id"));
         event.setCreatedBy(fieldSet.readString("createdBy"));
         event.setTitle(fieldSet.readString("title"));
         event.setDescription(fieldSet.readString("description"));
